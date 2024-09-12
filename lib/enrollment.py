@@ -1,28 +1,59 @@
 from datetime import datetime
+
+
 class Student:
     def __init__(self, name):
         self.name = name
         self._enrollments = []
+        self._grades = {}
 
     def enroll(self, course):
         if isinstance(course, Course):
             enrollment = Enrollment(self, course)
             self._enrollments.append(enrollment)
             course.add_enrollment(enrollment)
+            self._grades[course] = None
         else:
             raise TypeError("course must be an instance of Course")
 
     def get_enrollments(self):
         return self._enrollments.copy()
 
+    def course_count(self):
+        return len(self._enrollments)
+
+    def add_grade(self, course, grade):
+        if not isinstance(course, Course):
+            raise TypeError("course must be an instance of Course")
+        if course in self._grades:
+            if 0 <= grade <= 100:
+                self._grades[course] = grade
+            else:
+                raise ValueError("Grade must be between 0 and 100")
+        else:
+            raise ValueError(f"Student is not enrolled in the course: {course.title}")
+
+    def aggregate_average_grade(self):
+        # Let's assume the grades are stored in a protected attribute called _grades
+        total_grades = sum(
+            grade for grade in self._grades.values() if grade is not None
+        )
+        num_courses = len(
+            [grade for grade in self._grades.values() if grade is not None]
+        )
+        if num_courses == 0:
+            return 0
+        average_grade = total_grades / num_courses
+        return average_grade
+
+
 class Course:
     def __init__(self, title):
-
         self.title = title
         self._enrollments = []
 
     def add_enrollment(self, enrollment):
-        if isinstance(enrollment, Enrollment):
+        if isinstance(self, enrollment):
             self._enrollments.append(enrollment)
         else:
             raise TypeError("enrollment must be an instance of Enrollment")
@@ -33,7 +64,7 @@ class Course:
 
 class Enrollment:
     all = []
-    
+
     def __init__(self, student, course):
         if isinstance(student, Student) and isinstance(course, Course):
             self.student = student
@@ -45,3 +76,11 @@ class Enrollment:
 
     def get_enrollment_date(self):
         return self._enrollment_date
+
+    @classmethod
+    def aggregate_enrollments_per_day(cls):
+        enrollment_count = {}
+        for enrollment in cls.all:
+            date = enrollment.get_enrollment_date().date()
+            enrollment_count[date] = enrollment_count.get(date, 0) + 1
+        return enrollment_count
